@@ -1,0 +1,27 @@
+{
+  "name": "a-http-server-plugin-api",
+  "version": "0.0.0",
+  "main": "lib",
+  "description": "A Http Server Plugin Api",
+  "keywords": [
+    "a",
+    "http",
+    "server",
+    "plugin",
+    "api"
+  ],
+  "dependencies": {
+    "lodash.merge": "",
+    "mongoose": "",
+    "express-restify-mongoose": ""
+  },
+  "devDependencies": {},
+  "homepage": "https://github.com/joaoafrmartins/a-http-server-plugin-api",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/joaoafrmartins/a-http-server-plugin-api.git"
+  },
+  "bugs": {
+    "url": "https://github.com/joaoafrmartins/a-http-server-plugin-api/issues"
+  }
+}
