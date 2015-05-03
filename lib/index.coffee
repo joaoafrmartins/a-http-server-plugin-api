@@ -1,15 +1,25 @@
-merge = require 'lodash.merge'
+Api = require './api'
 
-mongoose = require 'mongoose'
+methodOverride = require 'method-override'
+
+configFn = require 'a-http-server-config-fn'
 
 module.exports = (next) ->
 
-  @config.api = merge require('./config'), @config?.api or {}
+  configFn @config, "#{__dirname}/config"
 
-  { url, options } = @config.api
+  Object.defineProperty @, "api", value: new Api @
 
-  options ?= {}
+  process.on "a-http-server:shutdown:dettach", () =>
 
-  mongoose.connect url, options, () ->
+    @api.schema.disconnect()
 
-    next null
+    process.emit "a-http-server:shutdown:dettached", "api"
+
+  { getters, methods } = @config.plugins.api['method-override']
+
+  getters.map (getter) => @app.use methodOverride getter, methods
+
+  process.emit "a-http-server:shutdown:attach", "api"
+
+  next null

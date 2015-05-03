@@ -11,9 +11,9 @@
     "api"
   ],
   "dependencies": {
-    "lodash.merge": "",
-    "mongoose": "",
-    "express-restify-mongoose": ""
+    "caminte": "",
+    "method-override": "",
+    "a-http-server-config-fn": ""
   },
   "devDependencies": {},
   "homepage": "https://github.com/joaoafrmartins/a-http-server-plugin-api",
