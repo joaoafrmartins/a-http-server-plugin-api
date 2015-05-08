@@ -1,59 +1,193 @@
-{ isArray } = Array
+Model = require './model'
+
+clone = require 'lodash.clone'
+
+{ camelize } = require 'inflection'
 
 module.exports = class Resource
 
-  constructor: (@api, @entity, @defines) ->
+  constructor: (@api, @entity, @definition) ->
 
-    Object.defineProperty @, "model", value: @api.model.apply @api, [
+    @defineModel()
 
-      @entity, @defines.schema, {
+    @defineDefaultRoutes()
 
-        primaryKeys: @defines?.primaryKeys
+    process.on 'a-http-server:api:model:relationships', (entity) =>
 
-        indexes: @defines?.indexes
+      if entity is @entity then @defineRelationshipRoutes()
 
-      }
+    @api.resources[@entity] = @
 
-    ]
+  scopes: (requiredScopes) ->
 
-    if @defines.validation then @modelValidation @defines.validation
+    { requestProperty } = @config.authorization
 
-    if @defines.hooks then @modelHooks @defines.hooks
+    availableScopes = Object.keys(scopes or {})
 
-    process.on 'a-http-server:started', () =>
+    requiredScopes.map (scope) =>
 
-      if @defines.relationships then @modelRelationships(
+      if not ( scope in availableScopes )
 
-        @defines.relationships
+        throw @error.UnauthorizedError
+
+    (req, res, next) =>
+
+      token = req[requestProperty]
+
+      token?.scopes?.map (scope) ->
+
+        if scope in requiredScopes then return next()
+
+      throw @error.UnauthorizedError
+
+  defineModel: ->
+
+    definition = @definition.database.model
+
+    definition.entity = @entity
+
+    Object.defineProperty @, "model", value: new Model(
+
+      @api.database, definition
+
+    )
+
+  defineDefaultRoutes: ->
+
+    blacklist = []
+
+    @definition.resource.routes.map (route) =>
+
+      blacklist.push route.path
+
+      route.model = @model
+
+      route.methods ?= @api.resource.methods
+
+      route.scopes ?= @definition.resource.scopes or @api.resource.scopes
+
+    @api.resource.routes.map (r) =>
+
+      if not ( r.path in blacklist )
+
+        route = clone r
+
+        route.methods ?= @api.resource.methods
+
+        if @definition.resource.scopes
+
+          route.scopes = @definition.resource.scopes
+
+        else
+
+          route.scopes = @api.resource.scopes
+
+        if @definition.resource.methods
+
+          route.methods = @definition.resource.methods
+
+        else
+
+          route.methods = @api.resource.methods
+
+        route.model = @model
+
+        @definition.resource.routes.push route
+
+    @definition.resource.routes.map (route) =>
+
+      route.path = "/#{@entity}#{route.path}".replace(/\/$/, '')
+
+    if not @definition.resource.nested
+
+      @defineRouter(
+
+        @api.server.app,
+
+        @definition.resource.routes
 
       )
 
-  modelValidation: (validation) ->
+  defineRelationshipRoutes: ->
 
-    Object.keys(validation).map (fn) =>
+    routes = @definition.resource.routes
 
-      definition = validation[fn]
+    relationships = @definition.database.model.relationships
 
-      if isArray definition then return @model[fn].apply @, definition
+    Object.keys(relationships.hasMany or {}).map (entity) =>
 
-      if typeof definition is "object"
+      relatedResource = @api.resources[entity].definition.resource
 
-        Object.keys(definition).map (field) =>
+      if relatedResource.nested
 
-          @model[fn].apply @, [ field, definition[field] ]
+        relatedResourceRoutes = []
 
-  modelHooks: (hooks) ->
+        relatedModel = @api.resources[entity].model
 
-    Object.keys(hooks).map (fn) => @model[hook] = hooks[fn]
+        relatedResource.routes.map (_route) =>
 
-  modelRelationships: (relationships) ->
+          route = clone _route
 
-    Object.keys(relationships).map (fn) =>
+          route.path = "/#{@entity}/:id#{route.path}".replace(/\/$/, '')
 
-      defines = relationships[fn]
+          route.model = relatedModel
 
-      Object.keys(defines).map (entity) =>
+          routes.push route
 
-        model = @api.model entity
+          relatedResourceRoutes.push route
 
-        @model[fn] entity, defines[entity]
+        @defineRouter(
+
+          @api.server.app,
+
+          relatedResourceRoutes
+
+        )
+
+  defineRouter: (app, routes) ->
+
+    routes.map (route) =>
+
+      route.methods.map (method) =>
+
+        route.path = "#{@api.endpoint}#{route.path}"
+
+        app[method] route.path, @[method].bind(
+
+          model: route.model,
+
+          server: @api.server
+
+        )
+
+  get: (req, res) ->
+
+    console.log @model
+
+    console.log @server.config
+
+    res.sendStatus 200
+
+  post: (req, res) ->
+
+    console.log @model
+
+    console.log @server.config
+
+    res.sendStatus 200
+
+  put: (req, res) ->
+
+    console.log @model
+
+    console.log @server.config
+
+    res.sendStatus 200
+
+  delete: (req, res) ->
+
+    console.log @model
+
+    console.log @server.config
+
+    res.sendStatus 200

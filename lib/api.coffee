@@ -1,35 +1,39 @@
-Resource = require './resource'
+{ isArray } = Array
 
-{ Schema } = require 'caminte'
+{ camelize } = require 'inflection'
+
+Database = require './database'
+
+Resource = require './resource'
 
 module.exports = class Api
 
   constructor: (@server) ->
 
-    { adapter, options } = @server.config.plugins.api.database
+    {
 
-    Object.defineProperty @, "schema", value: new Schema adapter, options
+      endpoint,
+
+      authorization,
+
+      database,
+
+      resource,
+
+      resources
+
+    } = @server.config.plugins.api
+
+    Object.defineProperty @, "endpoint", value: endpoint
+
+    Object.defineProperty @, "resource", value: resource
+
+    Object.defineProperty @, "database", value: new Database database
 
     Object.defineProperty @, "resources", value: {}
 
-  resource: (entity, definition) ->
+    Object.keys(resources).map (entity) =>
 
-    if @resources?[entity] then return @resources[entity]
+      Object.defineProperty @resources, camelize(entity),
 
-    Object.defineProperty @resources, entity, value: new Resource(
-
-      @, entity, definition
-
-    )
-
-    @resources[entity]
-
-  model: (args...) ->
-
-    name = args[0]
-
-    if @schema?.models?[name] then return @schema.models[name]
-
-    @schema.define.apply @schema, args
-
-    @schema.models[name]
+        value: new Resource @, entity, resources[entity]

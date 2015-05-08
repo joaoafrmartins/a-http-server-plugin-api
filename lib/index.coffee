@@ -12,7 +12,7 @@ module.exports = (next) ->
 
   process.on "a-http-server:shutdown:dettach", () =>
 
-    @api.schema.disconnect()
+    @api.database.disconnect()
 
     process.emit "a-http-server:shutdown:dettached", "api"
 

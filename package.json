@@ -12,6 +12,8 @@
   ],
   "dependencies": {
     "caminte": "",
+    "inflection": "",
+    "lodash.clone": "",
     "method-override": "",
     "a-http-server-config-fn": ""
   },
@@ -23,5 +25,7 @@
   },
   "bugs": {
     "url": "https://github.com/joaoafrmartins/a-http-server-plugin-api/issues"
-  }
+  },
+  "author": "João Afonso Martins",
+  "license": "MIT"
 }
