@@ -2,6 +2,8 @@
 
 { camelize } = require 'inflection'
 
+{ resolve } = require 'path'
+
 Database = require './database'
 
 Resource = require './resource'
@@ -32,8 +34,32 @@ module.exports = class Api
 
     Object.defineProperty @, "resources", value: {}
 
-    Object.keys(resources).map (entity) =>
+    if isArray(resources) then resources.map (dep) =>
 
-      Object.defineProperty @resources, camelize(entity),
+      try
 
-        value: new Resource @, entity, resources[entity]
+        mod = require dep
+
+      catch err
+
+        mod = require resolve(
+
+          "#{process.env.PWD}", "node_modules", "#{dep}"
+
+        )
+
+      Object.keys(mod).map (entity) =>
+
+        if mod[entity].enabled
+
+          Object.defineProperty @resources, camelize(entity),
+
+            value: new Resource @, entity, mod[entity]
+
+    else
+
+      Object.keys(resources).map (entity) =>
+
+        Object.defineProperty @resources, camelize(entity),
+
+          value: new Resource @, entity, resources[entity]
