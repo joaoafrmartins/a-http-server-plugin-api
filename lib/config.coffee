@@ -29,3 +29,6 @@ module.exports =
     'UnauthorizedError':
       'status': 401
       'message': 'Invalid Token'
+    'InvalidResourceError':
+      'status': 400
+      'message': 'Invalid Resource'
