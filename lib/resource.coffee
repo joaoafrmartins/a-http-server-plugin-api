@@ -14,31 +14,19 @@ module.exports = class Resource
 
     process.on 'a-http-server:api:model:relationships', (entity) =>
 
+      @defineAuthorization()
+
+    process.on 'a-http-server:api:model:relationships', (entity) =>
+
       if entity is @entity then @defineRelationshipRoutes()
+
+      process.emit 'a-http-server:api:resource:authorization', entity
 
     @api.resources[@entity] = @
 
-  scopes: (requiredScopes) ->
+  defineAuthorization: ->
 
-    { requestProperty } = @config.authorization
-
-    availableScopes = Object.keys(scopes or {})
-
-    requiredScopes.map (scope) =>
-
-      if not ( scope in availableScopes )
-
-        throw @error.UnauthorizedError
-
-    (req, res, next) =>
-
-      token = req[requestProperty]
-
-      token?.scopes?.map (scope) ->
-
-        if scope in requiredScopes then return next()
-
-      throw @error.UnauthorizedError
+    ###{ secret } = @api.server.config.plugins.api.auth###
 
   defineModel: ->
 
@@ -64,7 +52,9 @@ module.exports = class Resource
 
       route.methods ?= @api.resource.methods
 
-      route.scopes ?= @definition.resource.scopes or @api.resource.scopes
+      route.scopes ?= @definition.resource.scopes or
+
+      @api.resource.scopes
 
     @api.resource.routes.map (r) =>
 
@@ -150,44 +140,90 @@ module.exports = class Resource
 
       route.methods.map (method) =>
 
-        route.path = "#{@api.endpoint}#{route.path}"
+        ###
 
-        app[method] route.path, @[method].bind(
+        params = [
 
-          model: route.model,
+          "#{@api.endpoint}#{route.path}",
+
+          @scopes(route.scopes),
+
+        ]
+
+        ###
+
+        app[method] "#{@api.endpoint}#{route.path}", @[method].bind(
+
+          model: route.model
 
           server: @api.server
 
+          parseQuery: @parseQuery
+
         )
 
-  get: (req, res) ->
+  parseQuery: (request) ->
 
-    console.log @model
+    { order, group, skip, limit, where } = request
 
-    console.log @server.config
+    query = {}
 
-    res.sendStatus 200
+    if order then query.order = JSON.parse order
 
-  post: (req, res) ->
+    if group then query.group = JSON.parse group
 
-    console.log @model
+    if skip then query.skip = JSON.parse skip
 
-    console.log @server.config
+    if limit then query.limit = JSON.parse limit
 
-    res.sendStatus 200
+    if where then query.where = JSON.parse where
 
-  put: (req, res) ->
+    query
 
-    console.log @model
+  get: (req, res, next) ->
 
-    console.log @server.config
+    query = @parseQuery req.query
 
-    res.sendStatus 200
+    @model.find query, (err, data) ->
 
-  delete: (req, res) ->
+      if err then return next err
 
-    console.log @model
+      res.setHeader 'Content-Type', 'application/json'
 
-    console.log @server.config
+      res.send JSON.stringify(data) or {}
 
-    res.sendStatus 200
+  post: (req, res, next) ->
+
+    @model.create req.body, (err, data) ->
+
+      if err then return next err
+
+      res.setHeader 'Content-Type', 'application/json'
+
+      res.send JSON.stringify(data) or {}
+
+  put: (req, res, next) ->
+
+    { query, body } = req
+
+    query = @parseQuery query
+
+    @model.update query, body, (err, data) ->
+
+      if err then return next err
+
+      res.setHeader 'Content-Type', 'application/json'
+
+      res.end JSON.stringify(data) or {}
+
+  delete: (req, res, next) ->
+
+    query = @parseQuery req.query
+
+    @model.remove query, (err, data) ->
+
+      if err then return next err
+
+      res.setHeader 'Content-Type', 'application/json'
+
+      res.end JSON.stringify(data) or {}

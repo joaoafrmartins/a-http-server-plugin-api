@@ -1,6 +1,5 @@
 module.exports =
   'endpoint': '/api/v1'
-  'scopes': [ 'admin', 'user' ]
   'method-override':
     'methods': [ 'POST' ],
     'getters': [
@@ -10,14 +9,11 @@ module.exports =
       'X-HTTP-Method-Override'
     ]
   'database':
-    'default':
-      'driver': 'redis'
+    'api':
+      'driver': 'mongoose'
       'options':
-        'port': 0
         'host': 'localhost'
-  'authorization':
-    'secret': 'secret'
-    'requestProperty': 'auth'
+        'port': '27017'
   'resource':
     'scopes': [ 'user' ],
     'methods': [ 'get', 'put', 'post', 'delete' ],

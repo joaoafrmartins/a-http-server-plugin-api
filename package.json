@@ -18,6 +18,9 @@
     "a-http-server-config-fn": ""
   },
   "devDependencies": {},
+  "peerDependencies": {
+    "a-http-server-plugin-auth": ""
+  },
   "homepage": "https://github.com/joaoafrmartins/a-http-server-plugin-api",
   "repository": {
     "type": "git",

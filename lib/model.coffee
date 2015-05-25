@@ -1,3 +1,5 @@
+{ EOL } = require 'os'
+
 { isArray } = Array
 
 { camelize } = require 'inflection'
@@ -23,6 +25,12 @@ module.exports = class Model
       relationships
 
     } = definition
+
+    Object.keys(schema).map (field) =>
+
+      type = schema[field].type
+
+      schema[field].type = @connection[type]
 
     Object.defineProperty @, "model", value: @connection.define(
 
@@ -80,8 +88,18 @@ module.exports = class Model
 
       Object.keys(defines).map (entity) =>
 
-        @model[fn](
+        try
 
-          @connection.models[@modelName(entity)], defines[entity]
+          @model[fn](
 
-        )
+            @connection.models[@modelName(entity)], defines[entity]
+
+          )
+
+        catch err
+
+          throw new Error """loading #{entity} resource model
+
+          #{err.message}
+
+          """
